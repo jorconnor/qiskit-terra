@@ -12,8 +12,9 @@
 
 """A test for visualizing device coupling maps"""
 import unittest
-import os
 
+from io import BytesIO
+from PIL import Image
 from ddt import ddt, data
 from qiskit.test.mock import FakeProvider
 from qiskit.test import QiskitTestCase
@@ -25,6 +26,13 @@ from .visualization import path_to_diagram_reference, QiskitVisualizationTestCas
 
 if HAS_MATPLOTLIB:
     import matplotlib.pyplot as plt
+
+
+def _write_plot_to_image(fig):
+    img_buffer = BytesIO()
+    fig.savefig(img_buffer, format='png')
+    img_buffer.seek(0)
+    return Image.open(img_buffer)
 
 
 @ddt
@@ -41,11 +49,10 @@ class TestGateMap(QiskitVisualizationTestCase):
         """ tests plotting of gate map of a device (20 qubit, 16 qubit, 14 qubit and 5 qubit)"""
         n = backend.configuration().n_qubits
         img_ref = path_to_diagram_reference(str(n) + "bit_quantum_computer.png")
-        filename = "temp.png"
         fig = plot_gate_map(backend)
-        fig.savefig(filename)
-        self.assertImagesAreEqual(filename, img_ref, 0.2)
-        os.remove(filename)
+        result_img = _write_plot_to_image(fig)
+        self.assertImagesAreEqual(result_img, img_ref, 0.2)
+        plt.close(fig)
 
     @data(*backends)
     @unittest.skipIf(not HAS_MATPLOTLIB, 'matplotlib not available.')
@@ -58,11 +65,10 @@ class TestGateMap(QiskitVisualizationTestCase):
         circuit._layout.add_register(qr)
         n = backend.configuration().n_qubits
         img_ref = path_to_diagram_reference(str(n) + "_plot_circuit_layout.png")
-        filename = str(n) + "_plot_circuit_layout_result.png"
         fig = plot_circuit_layout(circuit, backend)
-        fig.savefig(filename)
-        self.assertImagesAreEqual(filename, img_ref, 0.1)
-        os.remove(filename)
+        result_img = _write_plot_to_image(fig)
+        self.assertImagesAreEqual(result_img, img_ref, 0.1)
+        plt.close(fig)
 
 
 @unittest.skipIf(not HAS_MATPLOTLIB, 'matplotlib not available.')
